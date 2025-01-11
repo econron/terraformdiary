@@ -124,10 +124,35 @@ resource "aws_route_table_association" "myvpc1-route-table-association-1c" {
 }
 
 // ec2を作成する
-# resource "aws_instance" "mytestserver1" {
-#   ami = "ami-0ab02459752898a60"
-#   instance_type = "t2.micro"
-#   tags = {
-#     Name = "myvpc1"
-#   }
-# }
+// セキュリティグループとルールの作成
+resource "aws_security_group" "myvpc1-sg1" {
+  name = "myvpc1-sg1"
+  vpc_id = aws_vpc.myvpc1.id
+  tags = {
+    Name = "myvpc1"
+  }
+}
+
+resource "aws_vpc_security_group_ingress_rule" "allow-ssh" {
+  security_group_id = aws_security_group.myvpc1-sg1.id
+  cidr_ipv4 = var.my_ip
+  from_port = 22
+  to_port = 22
+  ip_protocol = "ssh"
+}
+
+resource "aws_vpc_security_group_egress_rule" "allow-all" {
+  security_group_id = aws_security_group.myvpc1-sg1.id
+  cidr_ipv4 = "0.0.0.0/0"
+  ip_protocol = -1
+}
+
+resource "aws_instance" "mytestserver1" {
+  ami = "ami-0ab02459752898a60"
+  instance_type = "t2.micro"
+  subnet_id = aws_subnet.myvpc1-public-subnet-1a.id
+  vpc_security_group_ids = [aws_security_group.myvpc1-sg1.id]
+  tags = {
+    Name = "myvpc1"
+  }
+}
